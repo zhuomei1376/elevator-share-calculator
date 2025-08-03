@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老楼加梯费用计算器</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { padding: 20px; }
+        .result-box { margin-top: 20px; border: 1px solid #ddd; padding: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">老楼加装电梯费用分摊计算器</h1>
+        
+        <!-- 输入表单 -->
+        <form id="calculatorForm">
+            <div class="mb-3">
+                <label class="form-label">楼层数</label>
+                <select class="form-select" id="floors" required>
+                    <option value="3">3层</option>
+                    <option value="4">4层</option>
+                    <option value="5">5层</option>
+                    <option value="6">6层</option>
+                    <option value="7">7层</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">总费用（元，扣除补贴后）</label>
+                <input type="number" class="form-control" id="totalCost" required placeholder="如：300000">
+            </div>
+
+            <!-- 动态显示各楼层户数输入框 -->
+            <div id="householdInputs"></div>
+
+            <div class="mb-3">
+                <label class="form-label">分摊规则</label>
+                <select class="form-select" id="method">
+                    <option value="半层入户">系数法（半层入户）</option>
+                    <option value="平层入户">系数法（平层入户）</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn btn-primary w-100" onclick="calculateShare()">立即计算</button>
+        </form>
+
+        <!-- 结果展示 -->
+        <div class="result-box mt-4" id="result"></div>
+    </div>
+
+    <script>
+        // 修正1：统一所有规则的系数键为“X层”格式（避免键名不匹配）
+        const coefficients = {
+            "半层入户": { "2层": 0.5, "3层": 2, "4层": 3, "5层": 4, "6层": 5, "7层": 6 },
+            "平层入户": { "2层": 1, "3层": 2, "4层": 3, "5层": 4, "6层": 5, "7层": 6 },
+        };
+
+        // 初始化动态输入框
+        document.getElementById('floors').addEventListener('change', updateHouseholdInputs);
+        window.onload = updateHouseholdInputs;
+
+        function updateHouseholdInputs() {
+            const floors = document.getElementById('floors').value;
+            let html = '';
+            for (let i = 2; i <= floors; i++) {
+                html += `
+                    <div class="mb-3">
+                        <label class="form-label">${i}层户数</label>
+                        <input type="number" class="form-control" id="household_${i}" required value="2">
+                    </div>
+                `;
+            }
+            document.getElementById('householdInputs').innerHTML = html;
+        }
+
+        function calculateShare() {
+            const floors = parseInt(document.getElementById('floors').value); // 修正：转为数字类型
+            const totalCost = parseFloat(document.getElementById('totalCost').value); // 修正：确保是数字
+            const method = document.getElementById('method').value;
+            const selectedCoefficients = coefficients[method];
+            
+            // 修正2：先计算总系数（避免除以0）
+            let totalCoefficient = 0;
+            // 第一步：累加所有楼层的总系数
+            for (let i = 2; i <= floors; i++) {
+                const h = parseInt(document.getElementById(`household_${i}`).value); // 修正：转为数字
+                const c = selectedCoefficients[`${i}层`]; // 此时键名匹配（如“2层”）
+                totalCoefficient += c * h; // 先累加总系数
+            }
+
+            // 第二步：计算每户费用（此时totalCoefficient已不为0）
+            let result = '<h4>各楼层分摊费用明细：</h4><table class="table table-striped">';
+            result += '<tr><<th>楼层</</th><<th>户数</</th><<th>系数</</th><<th>每户费用（元）</</th><<th>楼层总费用（元）</</th></tr>';
+            
+            for (let i = 2; i <= floors; i++) {
+                const h = parseInt(document.getElementById(`household_${i}`).value);
+                const c = selectedCoefficients[`${i}层`];
+                // 修正3：用已计算好的总系数计算每户费用，如果户数为0，直接设为0，避免NaN
+                let floorTotal = 0;
+                let sharePerHousehold = 0;
+                if (h > 0) { // 只有当户数>0时才计算，否则强制为0
+                    floorTotal = (totalCost * c * h) / totalCoefficient;// 楼层总费用
+                    sharePerHousehold = floorTotal / h; // 每户费用
+                           }
+
+                result += `
+                    <tr>
+                        <td>${i}层</td>
+                        <td>${h}</td>
+                        <td>${c.toFixed(2)}</td>
+                        <td>${sharePerHousehold.toFixed(2)}</td>
+                        <td>${floorTotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+            
+            result += `</table><p>总系数：${totalCoefficient.toFixed(2)} | 总费用：${totalCost.toFixed(2)}元</p>`;
+            document.getElementById('result').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
