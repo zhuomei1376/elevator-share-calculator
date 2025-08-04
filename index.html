@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加装电梯费用分摊计算器</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body { padding: 20px; }
+        .result-box { margin-top: 20px; border: 1px solid #ddd; padding: 15px; }
+        
+        /* 输入框占位符样式 */
+        .form-control::placeholder { 
+            color: #ccc;
+            opacity: 0.8;
+        }
+
+        /* 标题区域样式（两行布局） */
+        .header {
+            text-align: center; /* 整体居中 */
+            margin-bottom: 25px; /* 与下方内容间距 */
+            padding: 10px 0; /* 上下内边距，增加呼吸感 */
+        }
+
+        /* 第一行标题：拙美智装 */
+        .header-title-1 {
+            color: #165DFF; /* 蓝色（常用品牌蓝，醒目且不刺眼） */
+            font-weight: 900; /* 特粗体 */
+            font-size: 1.8rem; /* 手机端主标题大小 */
+            margin: 0 0 5px 0; /* 底部间距，与第二行分隔 */
+            line-height: 1.2; /* 行高紧凑，避免换行时过高 */
+        }
+
+        /* 第二行标题：加梯费用分摊计算器 */
+        .header-title-2 {
+            color: #333; /* 深灰色，清晰易读 */
+            font-weight: 700; /* 粗体（比第一行稍轻） */
+            font-size: 1.3rem; /* 字号略小，突出主次 */
+            margin: 0; /* 去除默认边距 */
+            line-height: 1.2;
+        }
+        
+                /* 电话按钮样式 */
+        .phone-btn {
+            background-color: #165DFF; /* 与主标题同色 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 15px;
+            font-weight: 600;
+            font-size: 1rem;
+            margin: 10px 0;
+            cursor: pointer;
+            text-decoration: none; /* 去除链接下划线 */
+            display: inline-block; /* 确保 padding 生效 */
+        }
+        .phone-btn:hover {
+            background-color: #0e4cd1; /* 深色hover效果 */
+            color: white;
+        }
+
+        /* 计算规则说明文字样式（新增） */
+        .rule-desc {
+            margin: 20px 0; /* 与上下区域分隔 */
+            padding: 15px;
+            background-color: #f9f9f9; /* 浅灰背景突出说明 */
+            border-radius: 6px;
+            font-size: 0.9rem; /* 稍小字体 */
+            color: #666; /* 灰色文字 */
+            line-height: 1.6; /* 行高提高可读性 */
+        }
+
+                /* 底部二维码区域样式 */
+        .bottom-qrcode-area {
+            text-align: center;
+            margin-top: 30px; /* 与上方结果区域保持距离 */
+            padding: 15px;
+            border-top: 1px dashed #eee; /* 虚线分隔 */
+        }
+        .qrcode {
+            width: 150px; /* 二维码大小 */
+            height: 205px;
+            margin: 10px auto; /* 居中显示 */
+            display: block; /* 确保margin生效 */
+            border: 1px solid #eee;
+            padding: 5px;
+        }
+        .qrcode-desc {
+            color: #666;
+            font-size: 0.9rem;
+            margin: 5px 0 0 0;
+        }
+
+        ！/* 让按钮颜色与标题的 #165DFF 一致 */
+        .btn-primary {
+            background-color: #165DFF !important; /* 按钮背景色 */
+            border-color: #165DFF !important;     /* 按钮边框色（如果有） */
+        }
+          /* 按钮hover时的颜色（稍深一点，增强交互感） */
+        .btn-primary:hover {
+            background-color: #0E4CD1 !important; /* 比 #165DFF 深10%的蓝色 */
+            border-color: #0E4CD1 !important;
+        }
+
+        /* 小屏手机适配 */
+        @media (max-width: 360px) {
+            .header-title-1 { font-size: 1.5rem; }
+            .header-title-2 { font-size: 1rem; }
+            .consult-link { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 两行标题区域 -->
+        <div class="header">
+            <h1 class="header-title-1">拙美智装一站加梯</h1>
+            <h2 class="header-title-2">加装电梯费用分摊计算器</h2>
+            <!-- 新增1：可拨打电话的按钮 -->
+            <a href="tel:15716249629" class="phone-btn">
+                点击拨打咨询电话
+            </a>
+        </div>
+        
+        <!-- 输入表单 -->
+        <form id="calculatorForm">
+            <div class="mb-3">
+                <label class="form-label">楼层数</label>
+                <select class="form-select" id="floors" required>
+                    <option value="3">3层</option>
+                    <option value="4">4层</option>
+                    <option value="5">5层</option>
+                    <option value="6">6层</option>
+                    <option value="7">7层</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">总费用（元，扣除补贴后）</label>
+                <input type="number" class="form-control" id="totalCost" required placeholder="如：300000">
+            </div>
+
+            <!-- 动态显示各楼层户数输入框 -->
+            <div id="householdInputs"></div>
+
+            <div class="mb-3">
+                <label class="form-label">分摊规则</label>
+                <select class="form-select" id="method">
+                    <option value="半层入户">系数法（半层入户）</option>
+                    <option value="平层入户">系数法（平层入户）</option>
+                </select>
+            </div>
+
+            <button type="button" class="btn btn-primary w-100" onclick="calculateShare()">立即计算</button>
+        </form>
+
+        <!-- 结果展示 -->
+        <div class="result-box mt-4" id="result"></div>
+    </div>
+
+    <!-- 新增：计算规则说明文字（位于结果与二维码之间） -->
+        <div class="rule-desc">
+            根据谁受益，谁出资的原则，按楼层受益大小出资。具体依据少走多少台阶，就多出多少钱来计算系数。比如三楼居民少走了2层楼梯，系数就设为2，四楼则为3。每一户的系数除以总系数的和，就是每户需要分摊的比例。
+        </div>
+
+    <!-- 新增：二维码移至页面最底部 -->
+        <div class="bottom-qrcode-area">
+            <p class="qrcode-desc">扫码添加客服微信，获取详细方案</p >
+            <img src="zhuomei-s.jpg" alt="客服微信二维码" class="qrcode">
+        </div>
+    </div>
+    <script>
+        // 修正1：统一所有规则的系数键为“X层”格式（避免键名不匹配）
+        const coefficients = {
+            "半层入户": { "2层": 0.5, "3层": 2, "4层": 3, "5层": 4, "6层": 5, "7层": 6 },
+            "平层入户": { "2层": 1, "3层": 2, "4层": 3, "5层": 4, "6层": 5, "7层": 6 },
+        };
+
+        // 初始化动态输入框
+        document.getElementById('floors').addEventListener('change', updateHouseholdInputs);
+        window.onload = updateHouseholdInputs;
+
+        function updateHouseholdInputs() {
+            const floors = document.getElementById('floors').value;
+            let html = '';
+            for (let i = 2; i <= floors; i++) {
+                html += `
+                    <div class="mb-3">
+                        <label class="form-label">${i}层户数</label>
+                        <input type="number" class="form-control" id="household_${i}" required value="2">
+                    </div>
+                `;
+            }
+            document.getElementById('householdInputs').innerHTML = html;
+        }
+
+        function calculateShare() {
+            const floors = parseInt(document.getElementById('floors').value); // 修正：转为数字类型
+            const totalCost = parseFloat(document.getElementById('totalCost').value); // 修正：确保是数字
+            const method = document.getElementById('method').value;
+            const selectedCoefficients = coefficients[method];
+            
+            // 修正2：先计算总系数（避免除以0）
+            let totalCoefficient = 0;
+            // 第一步：累加所有楼层的总系数
+            for (let i = 2; i <= floors; i++) {
+                const h = parseInt(document.getElementById(`household_${i}`).value); // 修正：转为数字
+                const c = selectedCoefficients[`${i}层`]; // 此时键名匹配（如“2层”）
+                totalCoefficient += c * h; // 先累加总系数
+            }
+
+            // 第二步：计算每户费用（此时totalCoefficient已不为0）
+            let result = '<h4>各楼层分摊费用明细：</h4><table class="table table-striped">';
+            result += '<tr><<th>楼层</</th><<th>户数</</th><<th>系数</</th><<th>每户费用（元）</</th><<th>楼层总费用（元）</</th></tr>';
+            
+            for (let i = 2; i <= floors; i++) {
+                const h = parseInt(document.getElementById(`household_${i}`).value);
+                const c = selectedCoefficients[`${i}层`];
+                // 修正3：用已计算好的总系数计算每户费用，如果户数为0，直接设为0，避免NaN
+                let floorTotal = 0;
+                let sharePerHousehold = 0;
+                if (h > 0) { // 只有当户数>0时才计算，否则强制为0
+                    floorTotal = (totalCost * c * h) / totalCoefficient;// 楼层总费用
+                    sharePerHousehold = floorTotal / h; // 每户费用
+                           }
+
+                result += `
+                    <tr>
+                        <td>${i}层</td>
+                        <td>${h}</td>
+                        <td>${c.toFixed(2)}</td>
+                        <td>${sharePerHousehold.toFixed(2)}</td>
+                        <td>${floorTotal.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+            
+            result += `</table><p>总系数：${totalCoefficient.toFixed(2)} | 总费用：${totalCost.toFixed(2)}元</p>`;
+            document.getElementById('result').innerHTML = result;
+        }
+    </script>
+</body>
+</html>
